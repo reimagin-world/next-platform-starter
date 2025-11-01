@@ -150,9 +150,12 @@ function validateRequestData(data: DocumentRequest, requestId: string): Response
   if (!data.base64Content || typeof data.base64Content !== "string" || data.base64Content.trim() === "") {
     errors.push("base64Content is required and must be a non-empty string");
   } else {
+    const cleanedBase64 = data.base64Content.replace(/\s/g, "");
     const base64Regex = /^[A-Za-z0-9+/]+=*$/;
-    if (!base64Regex.test(data.base64Content.replace(/\s/g, ""))) {
+    if (!base64Regex.test(cleanedBase64)) {
       errors.push("base64Content must be a valid base64 encoded string");
+    } else if (cleanedBase64.length < 100) {
+      errors.push("base64Content appears to be too short to be a valid image");
     }
   }
 
@@ -213,6 +216,17 @@ Return your response in the following JSON format:
   "documentQualityScore": number
 }`;
 
+  const cleanedBase64 = base64Content.replace(/\s/g, "");
+  let mimeType: string;
+  
+  try {
+    mimeType = getMimeTypeFromBase64(cleanedBase64);
+    console.log(`[${requestId}] Detected MIME type: ${mimeType}`);
+  } catch (error) {
+    console.error(`[${requestId}] MIME type detection failed:`, error);
+    throw new Error(`Invalid image format: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+
   const requestBody = {
     contents: [
       {
@@ -222,8 +236,8 @@ Return your response in the following JSON format:
           },
           {
             inline_data: {
-              mime_type: getMimeTypeFromBase64(base64Content),
-              data: base64Content,
+              mime_type: mimeType,
+              data: cleanedBase64,
             },
           },
         ],
@@ -282,16 +296,26 @@ Return your response in the following JSON format:
 }
 
 function getMimeTypeFromBase64(base64String: string): string {
-  const signature = base64String.substring(0, 50);
+  const cleanedBase64 = base64String.replace(/\s/g, "");
+  
+  if (cleanedBase64.length < 20) {
+    throw new Error("Base64 string too short to determine MIME type");
+  }
 
-  if (signature.startsWith("iVBORw")) return "image/png";
+  const signature = cleanedBase64.substring(0, 50);
+
+  if (signature.startsWith("iVBORw0KGgo")) return "image/png";
   if (signature.startsWith("/9j/")) return "image/jpeg";
   if (signature.startsWith("R0lGOD")) return "image/gif";
+  if (signature.startsWith("UklGR") && cleanedBase64.includes("V0VCUFZQOC")) return "image/webp";
+  if (signature.startsWith("Qk")) return "image/bmp";
+  if (signature.startsWith("SUkq") || signature.startsWith("TU0q")) return "image/tiff";
   if (signature.startsWith("JVBERi")) return "application/pdf";
   if (signature.startsWith("UEs")) return "application/vnd.openxmlformats-officedocument";
 
-  console.warn("Could not determine MIME type from base64, defaulting to image/png");
-  return "image/png";
+  throw new Error(
+    "Unsupported or invalid image format. Supported formats: PNG, JPEG, GIF, WebP, BMP, TIFF, PDF"
+  );
 }
 
 function createErrorResponse(message: string, status: number, requestId: string): Response {
