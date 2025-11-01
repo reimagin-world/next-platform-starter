@@ -5,6 +5,7 @@ interface DocumentRequest {
   documentId: string;
   base64Content: string;
   secretCode: string;
+  mimeType?: string;
 }
 
 interface DocumentResponse {
@@ -33,6 +34,7 @@ export default async (req: Request, context: Context): Promise<Response> => {
   
   try {
     console.log(`[${requestId}] Document processing request received`);
+    console.log(`[${requestId}] Endpoint: /api/document-processing`);
 
     if (req.method !== "POST") {
       console.warn(`[${requestId}] Invalid method: ${req.method}`);
@@ -67,11 +69,13 @@ export default async (req: Request, context: Context): Promise<Response> => {
     }
 
     console.log(`[${requestId}] Processing document: ${body.documentName} (ID: ${body.documentId})`);
+    console.log(`[${requestId}] Document extension: ${body.documentName.split('.').pop()}`);
 
     const geminiResult = await processDocumentWithGemini(
       body.base64Content,
       body.documentName,
-      requestId
+      requestId,
+      body.mimeType
     );
 
     console.log(`[${requestId}] Document processing completed successfully`);
@@ -150,9 +154,16 @@ function validateRequestData(data: DocumentRequest, requestId: string): Response
   if (!data.base64Content || typeof data.base64Content !== "string" || data.base64Content.trim() === "") {
     errors.push("base64Content is required and must be a non-empty string");
   } else {
+    const cleanedContent = data.base64Content.replace(/\s/g, "");
     const base64Regex = /^[A-Za-z0-9+/]+=*$/;
-    if (!base64Regex.test(data.base64Content.replace(/\s/g, ""))) {
+    if (!base64Regex.test(cleanedContent)) {
       errors.push("base64Content must be a valid base64 encoded string");
+    }
+    
+    try {
+      atob(cleanedContent.substring(0, 100));
+    } catch {
+      errors.push("base64Content appears to be corrupted or invalid");
     }
   }
 
@@ -172,7 +183,8 @@ function validateRequestData(data: DocumentRequest, requestId: string): Response
 async function processDocumentWithGemini(
   base64Content: string,
   documentName: string,
-  requestId: string
+  requestId: string,
+  providedMimeType?: string
 ): Promise<{
   extractedData: any;
   confidenceScore: number;
@@ -187,6 +199,12 @@ async function processDocumentWithGemini(
     throw new Error("Gemini API key not configured");
   }
 
+  const cleanedBase64 = cleanBase64Content(base64Content);
+  const fileExtension = documentName.split('.').pop()?.toLowerCase();
+  const mimeType = providedMimeType || getMimeTypeFromExtension(fileExtension, cleanedBase64);
+  
+  console.log(`[${requestId}] File extension: ${fileExtension}`);
+  console.log(`[${requestId}] Detected/Provided MIME type: ${mimeType}`);
   console.log(`[${requestId}] Calling Gemini API with model: ${geminiModel}`);
 
   const prompt = `You are an intelligent document processing system. Analyze the provided document image and extract all relevant information in a structured format.
@@ -222,8 +240,8 @@ Return your response in the following JSON format:
           },
           {
             inline_data: {
-              mime_type: getMimeTypeFromBase64(base64Content),
-              data: base64Content,
+              mime_type: mimeType,
+              data: cleanedBase64,
             },
           },
         ],
@@ -233,6 +251,24 @@ Return your response in the following JSON format:
       response_mime_type: "application/json",
     },
   };
+
+  console.log(`[${requestId}] Gemini API Request Details:`);
+  console.log(`[${requestId}]   URL: ${geminiApiUrl}/models/${geminiModel}:generateContent`);
+  console.log(`[${requestId}]   Method: POST`);
+  console.log(`[${requestId}]   MIME Type: ${mimeType}`);
+  console.log(`[${requestId}]   Base64 Content Length: ${cleanedBase64.length} characters`);
+  console.log(`[${requestId}]   Prompt Length: ${prompt.length} characters`);
+  console.log(`[${requestId}]   Full Request Body:`, JSON.stringify({
+    ...requestBody,
+    contents: requestBody.contents.map(content => ({
+      ...content,
+      parts: content.parts.map(part => 
+        'inline_data' in part 
+          ? { inline_data: { mime_type: part.inline_data.mime_type, data: `[BASE64_DATA_${part.inline_data.data.length}_CHARS]` } }
+          : part
+      )
+    }))
+  }, null, 2));
 
   try {
     const response = await fetch(
@@ -281,17 +317,80 @@ Return your response in the following JSON format:
   }
 }
 
-function getMimeTypeFromBase64(base64String: string): string {
-  const signature = base64String.substring(0, 50);
+function cleanBase64Content(base64Content: string): string {
+  let cleaned = base64Content.trim();
+  
+  if (cleaned.includes(',')) {
+    cleaned = cleaned.split(',')[1] || cleaned;
+  }
+  
+  cleaned = cleaned.replace(/[\r\n\s]/g, '');
+  
+  return cleaned;
+}
 
-  if (signature.startsWith("iVBORw")) return "image/png";
-  if (signature.startsWith("/9j/")) return "image/jpeg";
-  if (signature.startsWith("R0lGOD")) return "image/gif";
-  if (signature.startsWith("JVBERi")) return "application/pdf";
-  if (signature.startsWith("UEs")) return "application/vnd.openxmlformats-officedocument";
+function getMimeTypeFromExtension(extension: string | undefined, base64String: string): string {
+  if (extension) {
+    switch (extension) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'txt':
+        return 'text/plain';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'gif':
+        return 'image/gif';
+      case 'bmp':
+        return 'image/bmp';
+      case 'webp':
+        return 'image/webp';
+    }
+  }
 
-  console.warn("Could not determine MIME type from base64, defaulting to image/png");
-  return "image/png";
+  try {
+    const binaryString = atob(base64String.substring(0, 20));
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+      return "image/png";
+    }
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+      return "image/jpeg";
+    }
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+      return "image/gif";
+    }
+    if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
+      return "application/pdf";
+    }
+    if (bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) {
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+    if (bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0) {
+      return "application/msword";
+    }
+    if (bytes[0] === 0x42 && bytes[1] === 0x4D) {
+      return "image/bmp";
+    }
+    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+      return "image/webp";
+    }
+  } catch (error) {
+    console.warn("Error decoding base64 for MIME type detection:", error);
+  }
+  
+  console.warn("Could not determine MIME type, defaulting to application/pdf");
+  return "application/pdf";
 }
 
 function createErrorResponse(message: string, status: number, requestId: string): Response {
