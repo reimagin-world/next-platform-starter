@@ -1,7 +1,7 @@
 // src/backend/src/services/pdf/PDFReportService.ts
 import { getPDFWorkerService } from './PDFWorkerService';
 import { logger, structuredLogger } from '../../utils/logger';
-import { IEnhancedPDFReport } from '../../../shared/types/report.types';
+import { IEnhancedPDFReport } from '../../shared/types/report.types';
 import { getConfig } from '../../config/config.service';
 
 export class PDFReportService {
@@ -112,14 +112,17 @@ export class PDFReportService {
       riskAnalysis: {
         score: 65,
         interpretation: 'Moderate career risk with specific areas for improvement.',
-        visualizations: []
+        visualizations: [],
+        factors: [],
+        recommendations: []
       },
       marketContext: {
         trends: 'The Indian IT sector is evolving with increased demand for cloud, AI, and cybersecurity skills.',
+        marketOutlook: 'Positive',
         inDemandSkills: [
-          { name: 'Cloud Computing', demandLevel: 'High' },
-          { name: 'Artificial Intelligence', demandLevel: 'High' },
-          { name: 'Cybersecurity', demandLevel: 'Medium' }
+          { name: 'Cloud Computing', demandLevel: 'high' },
+          { name: 'Artificial Intelligence', demandLevel: 'high' },
+          { name: 'Cybersecurity', demandLevel: 'medium' }
         ]
       },
       skillGapAnalysis: {
@@ -174,7 +177,7 @@ export class PDFReportService {
       doc.moveDown();
       doc.fontSize(12).text('Simplified Report - Full intelligence features temporarily unavailable.');
       doc.end();
-    });
+    }) as unknown as Promise<{ pdfBuffer: Buffer; report: IEnhancedPDFReport; metadata: any }>;
   }
 
   async getGenerationStatus(): Promise<any> {

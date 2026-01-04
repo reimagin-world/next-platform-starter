@@ -2,6 +2,8 @@ export async function generateRiskAnalysis(resumeData: any, assessmentData: any,
   return {
     score: 65,
     interpretation: 'Moderate Risk',
-    visualizations: []
+    visualizations: [],
+    factors: [],
+    recommendations: []
   };
 }

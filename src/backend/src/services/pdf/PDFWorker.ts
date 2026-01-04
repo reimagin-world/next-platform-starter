@@ -2,7 +2,7 @@
 import { parentPort, workerData, isMainThread } from 'worker_threads';
 import { logger, structuredLogger } from '../../utils/logger';
 import PDFDocument from 'pdfkit';
-import { IEnhancedPDFReport } from '../../../shared/types/report.types';
+import { IEnhancedPDFReport } from '../../shared/types/report.types';
 import { generateExecutiveSummary } from '../../services/intelligence/executiveSummaryService';
 import { generateRiskAnalysis } from '../../services/intelligence/riskAnalysisService';
 import { generateMarketAnalysis } from '../../services/intelligence/marketAnalysisService';

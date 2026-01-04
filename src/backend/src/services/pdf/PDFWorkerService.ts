@@ -315,7 +315,7 @@ export class PDFWorkerService extends EventEmitter {
     // Wait for active tasks to complete with timeout
     const activeTaskPromises = Array.from(this.activeTasks.values()).map(task =>
       Promise.race([
-        new Promise(resolve => task.resolve(resolve)),
+        new Promise(resolve => task.resolve(resolve as any)),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Shutdown timeout')), 10000)
         )
