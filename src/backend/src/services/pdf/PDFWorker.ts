@@ -150,6 +150,7 @@ async function generateEnhancedPDF(
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
+        bufferPages: true,
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
         info: {
@@ -269,7 +270,7 @@ function addRiskAnalysis(doc: PDFKit.PDFDocument, analysis: any): void {
   doc.moveDown(0.5);
 
   // Risk score visualization
-  const riskScore = analysis.score;
+  const riskScore = typeof analysis.score === 'number' && !isNaN(analysis.score) ? analysis.score : 0;
   const riskLevel = getRiskLevel(riskScore);
 
   doc.fillColor('#2d3748')
@@ -291,7 +292,7 @@ function addRiskAnalysis(doc: PDFKit.PDFDocument, analysis: any): void {
      .fill();
 
   // Risk level indicator
-  const riskWidth = (riskScore / 100) * width;
+  const riskWidth = (Math.max(0, Math.min(100, riskScore)) / 100) * width;
   const riskColor = getRiskColor(riskScore);
 
   doc.fillColor(riskColor)
@@ -323,6 +324,7 @@ function addRiskAnalysis(doc: PDFKit.PDFDocument, analysis: any): void {
 }
 
 function addMarketContext(doc: PDFKit.PDFDocument, marketContext: any): void {
+  doc.x = 50; // Reset x to left margin
   doc.fillColor('#1a365d')
      .fontSize(18)
      .font('Helvetica-Bold')
@@ -469,7 +471,7 @@ function addRecommendations(doc: PDFKit.PDFDocument, recommendations: any[]): vo
     doc.moveDown(0.25);
     doc.fillColor('#4a5568')
        .fontSize(10)
-       .font('Helvetica-Italic')
+       .font('Helvetica-Oblique')
        .text(`Timeline: ${rec.timeline}`);
 
     doc.moveDown(0.75);

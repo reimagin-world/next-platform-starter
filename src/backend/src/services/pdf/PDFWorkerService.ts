@@ -41,14 +41,26 @@ export class PDFWorkerService extends EventEmitter {
   }
 
   private createWorker(): void {
-    const worker = new Worker(path.join(__dirname, 'PDFWorker.ts'), {
+    // Determine if we are running in TypeScript (ts-node) or JavaScript (node)
+    const isTsNode = __filename.endsWith('.ts');
+    const workerFile = isTsNode ? 'PDFWorker.ts' : 'PDFWorker.js';
+    const workerPath = path.join(__dirname, workerFile);
+
+    const workerOptions: any = {
       workerData: { workerId: this.workerPool.length },
       resourceLimits: {
         maxOldGenerationSizeMb: 512,
         maxYoungGenerationSizeMb: 256,
         codeRangeSizeMb: 64
       }
-    });
+    };
+
+    // If running in ts-node, we need to register it for the worker
+    if (isTsNode) {
+      workerOptions.execArgv = ['-r', 'ts-node/register'];
+    }
+
+    const worker = new Worker(workerPath, workerOptions);
 
     worker.on('message', (result) => this.handleWorkerMessage(worker, result));
     worker.on('error', (error) => this.handleWorkerError(worker, error));
