@@ -1,5 +1,5 @@
 import React from 'react';
-import { getRiskLabel, getRiskColor, formatPercentage } from '../../utils/formatters';
+import { getRiskLabel, getRiskColor } from '../../utils/formatters';
 
 interface RiskMeterProps {
   score: number;

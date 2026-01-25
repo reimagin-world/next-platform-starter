@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useMarketIntelligence } from '../hooks/useMarketData';
-import { Button } from '../components/common/Button';
-import { Search, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react';
+import { Search, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { TECHNOLOGY_SUGGESTIONS } from '../utils/constants';
 
 const MarketInsights: React.FC = () => {
@@ -129,7 +128,7 @@ const MarketInsights: React.FC = () => {
             <div className="rounded-lg border border-gray-200 bg-white p-6">
               <h3 className="text-lg font-medium text-gray-900">Top Industries</h3>
               <div className="mt-4 space-y-3">
-                {data.marketData.topIndustries.map((industry, index) => (
+                {data.marketData.topIndustries.map((industry) => (
                   <div key={industry} className="flex items-center justify-between">
                     <span className="text-gray-700">{industry}</span>
                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">

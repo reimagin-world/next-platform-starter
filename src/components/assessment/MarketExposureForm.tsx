@@ -1,15 +1,6 @@
 import React from 'react';
-import { useAssessmentStore } from '../../store/assessmentStore';
-import Input from '../common/Input';
 
 const MarketExposureForm: React.FC = () => {
-  const { formData, updateFormData } = useAssessmentStore();
-  const marketExposure = formData.marketExposure || {
-    industries: [],
-    geographic: [],
-    companyTypes: []
-  };
-
   // Simplified for demo - just simple inputs or placeholders
   return (
     <div className="space-y-6 bg-white p-6 rounded-lg border border-gray-200">

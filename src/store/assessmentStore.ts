@@ -61,7 +61,7 @@ const initialState = {
 
 export const useAssessmentStore = create<AssessmentState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       updateFormData: (data) =>

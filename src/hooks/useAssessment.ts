@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useAssessmentStore } from '../store/assessmentStore';
-import { assessmentService, marketService } from '../api';
-import { AssessmentRequest, AssessmentResponse } from '../types/assessment';
+import { assessmentService } from '../api';
+import { AssessmentRequest } from '../types/assessment';
 import { v4 as uuidv4 } from 'uuid';
 import config from '../config/appConfig';
 

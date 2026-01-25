@@ -10,7 +10,7 @@ import { Plus, Trash2, Search } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
 const TechnologyForm: React.FC = () => {
-  const { formData, addTechnology, removeTechnology, updateTechnology } = useAssessmentStore();
+  const { formData, addTechnology, removeTechnology } = useAssessmentStore();
   const technologies = formData.technologies || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTech, setSelectedTech] = useState<Partial<Technology>>({

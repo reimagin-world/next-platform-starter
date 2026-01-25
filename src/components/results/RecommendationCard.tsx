@@ -10,7 +10,7 @@ interface RecommendationCardProps {
   index: number;
 }
 
-const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation, index }) => {
+const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getTypeIcon = () => {

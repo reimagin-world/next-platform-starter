@@ -6,7 +6,7 @@ import RecommendationCard from '../components/results/RecommendationCard';
 import MarketInsightCard from '../components/results/MarketInsightCard';
 import { Download, Share2, RefreshCw, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { formatPercentage, formatCurrency } from '../utils/formatters';
+import { formatPercentage } from '../utils/formatters';
 
 const ResultsPage: React.FC = () => {
   const navigate = useNavigate();

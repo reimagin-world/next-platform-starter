@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAssessmentStore } from '../../store/assessmentStore';
 import Input from '../common/Input';
-import { Button } from '../common/Button';
 
 const LearningEvidenceForm: React.FC = () => {
   const { formData, updateFormData } = useAssessmentStore();
@@ -11,7 +10,7 @@ const LearningEvidenceForm: React.FC = () => {
     sideProjects: 0
   };
 
-  const handleUpdate = (field: string, value: any) => {
+  const handleUpdate = (field: string, value: number) => {
     updateFormData({
       learningEvidence: {
         ...learningEvidence,

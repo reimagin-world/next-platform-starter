@@ -13,7 +13,7 @@ export function formatDateForInput(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

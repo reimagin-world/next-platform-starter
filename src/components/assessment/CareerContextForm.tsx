@@ -14,7 +14,7 @@ const CareerContextForm: React.FC = () => {
     companySize: CompanySize.ENTERPRISE
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number) => {
     updateFormData({
       careerContext: {
         ...careerContext,

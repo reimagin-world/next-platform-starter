@@ -1,6 +1,4 @@
 import React from 'react';
-import { cn } from '../../utils/helpers';
-import { Check } from 'lucide-react';
 
 interface Step {
   id: number;
